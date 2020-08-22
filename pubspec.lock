@@ -22,20 +22,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.4.0"
-  battery:
-    dependency: transitive
-    description:
-      name: battery
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.0"
-  battery_indicator:
-    dependency: "direct main"
-    description:
-      name: battery_indicator
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.0.4"
   boolean_selector:
     dependency: transitive
     description:
