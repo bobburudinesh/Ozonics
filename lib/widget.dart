@@ -1,7 +1,3 @@
-// Copyright 2017, Paul DeMarco.
-// All rights reserved. Use of this source code is governed by a
-// BSD-style license that can be found in the LICENSE file.
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
@@ -18,7 +14,7 @@ class ScanResultTile extends StatelessWidget {
         children: <Widget>[
           Text(
             result.device.name,
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: Colors.black),
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
           ),
