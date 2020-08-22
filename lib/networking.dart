@@ -7,10 +7,8 @@ class NetworkHelper {
   Future getData() async {
     http.Response response = await http.get(url);
     if (response.statusCode == 200) {
-      String climate = response.body;
-
-      var decodedat = jsonDecode(climate);
-      return decodedat;
+      Map<String, dynamic> map = json.decode(response.body);
+      return map;
     } else {
       print(response.statusCode);
     }

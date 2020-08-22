@@ -1,24 +1,21 @@
-//import 'dart:html';
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'widget.dart';
-import 'package:battery_indicator/battery_indicator.dart';
 import 'locationget.dart';
 import 'networking.dart';
 import 'package:countdown_flutter/countdown_flutter.dart';
 import 'package:intl/intl.dart';
-
 const apikey = '17ce55ff5a97302d58bcbc946dd70239';
 const SERVICE_UUID = 'e14d460c-32bc-457e-87f8-b56d1eb24318';
 const CHARACTERISTIC_UUID_TX = '08b332a8-f4f6-4222-b645-60073ac6823f';
-dynamic getlocationweather() async {
+Future getlocationweather() async {
   Location loc = Location();
   await loc.getcurrentloc();
   NetworkHelper networkhelper = NetworkHelper(
       'https://api.openweathermap.org/data/2.5/weather?lat=${loc.lat}&lon=${loc.lon}&appid=$apikey&units=imperial');
-  var weatherdata = await networkhelper.getData();
+  var weatherdata =  networkhelper.getData();
   return weatherdata;
 }
 BluetoothDevice device1;
@@ -27,19 +24,31 @@ bool bstpressAttention = false;
 bool hyppressAttention = false;
 bool dripressAttention = false;
 List<int> ans=[];
+int prev=0;
 List<int> pwrstatus=[];
 List<int> modecont=[];
 String mfgdata;
 List<int> va = [60];
 int x1 = 0;
 int x2=0;
+Future<dynamic> weatherdata;
+int _currentmode;
+int batvalue;
+List<int> gross=[];
+Timer _timer;
+List<int> modeno=[];
+bool powerstatus=false;
+List<BluetoothService> services;
+BluetoothCharacteristic charac;
+bool pwrpressAttention = false;
+
+
 String readTimestamp(int timestamp) {
   var now = DateTime.now();
   var format = DateFormat('HH:mm a');
   var date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
   var diff = now.difference(date);
   var time = '';
-
   if (diff.inSeconds <= 0 ||
       diff.inSeconds > 0 && diff.inMinutes == 0 ||
       diff.inMinutes > 0 && diff.inHours == 0 ||
@@ -61,16 +70,6 @@ String readTimestamp(int timestamp) {
 
   return time;
 }
-
-var batteryIndicator = new BatteryIndicator(
-  style: BatteryIndicatorStyle.skeumorphism,
-  colorful: true,
-  showPercentNum: true,
-  mainColor: Colors.red,
-  size: 25,
-  ratio: 3,
-  showPercentSlide: false,
-);
 void main() {
   runApp(FlutterBlueApp());
 }
@@ -129,6 +128,13 @@ class BluetoothOffScreen extends StatelessWidget {
                     .subhead
                     .copyWith(color: Colors.white),
               ),
+              Text(
+                'Please Turn on Bluetooth.',
+                style: Theme.of(context)
+                    .primaryTextTheme
+                    .subhead
+                    .copyWith(color: Colors.white),
+              ),
             ],
           ),
         ),
@@ -136,6 +142,60 @@ class BluetoothOffScreen extends StatelessWidget {
     );
   }
 }
+
+class searchlogo extends StatefulWidget {
+  @override
+  _searchlogoState createState() => _searchlogoState();
+}
+
+class _searchlogoState extends State<searchlogo> with SingleTickerProviderStateMixin {
+  AnimationController controller1;
+  Animation animation1;
+  void initState() {
+    super.initState();
+    controller1 = AnimationController(
+        duration: Duration(seconds: 1),
+        vsync: this,
+        lowerBound: 0.6
+    );
+    animation1 = CurvedAnimation(parent: controller1, curve: Curves.easeIn);
+    controller1.forward();
+    animation1.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        controller1.reverse(from: 1.0);
+      } else if (status == AnimationStatus.dismissed) {
+        controller1.forward();
+      }
+    });
+    controller1.addListener(() {
+      setState(() {});
+    });
+  }
+  @override
+  void dispose() {
+    controller1.dispose();
+    super.dispose();
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 150,
+      width: 150,
+      child: Center(
+        child: Image(
+          image: AssetImage('images/scan.png'),
+          height: animation1.value * 100,
+          width: animation1.value * 100,
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+
 class FindDevicesScreen extends StatefulWidget {
   @override
   _FindDevicesScreenState createState() => _FindDevicesScreenState();
@@ -143,47 +203,21 @@ class FindDevicesScreen extends StatefulWidget {
 class _FindDevicesScreenState extends State<FindDevicesScreen>
     with TickerProviderStateMixin {
   AnimationController controller;
-  AnimationController controller1;
   Animation animation;
-  Animation animation1;
-  var weatherdata;
   void initState() {
     super.initState();
-    getlocdata();
     controller = AnimationController(
       duration: Duration(seconds: 1),
       vsync: this,
     );
-    controller1=AnimationController(
-      duration: Duration(seconds: 1),
-      vsync: this,
-      lowerBound: 0.6
-    );
     animation = CurvedAnimation(parent: controller, curve: Curves.linear);
-    animation1 = CurvedAnimation(parent: controller1, curve: Curves.easeIn);
+    //animation1 = CurvedAnimation(parent: controller1, curve: Curves.easeIn);
     controller.forward();
     controller.addListener(() {
       setState(() {});
     });
-    controller1.forward();
-    animation1.addStatusListener((status){
-      if(status==AnimationStatus.completed){
-        controller1.reverse(from: 1.0);
-      }else if(status==AnimationStatus.dismissed){
-        controller1.forward();
-      }
-
-
-    });
-    controller1.addListener(() {
-      setState(() {});
-    });
     
     FlutterBlue.instance.startScan(timeout: Duration(minutes: 4));
-  }
-
-  void getlocdata() async {
-    weatherdata = await getlocationweather();
   }
 
   void connection(var r) async {
@@ -191,16 +225,13 @@ class _FindDevicesScreenState extends State<FindDevicesScreen>
     device1=r.device;
     FlutterBlue.instance.stopScan();
     Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-      return DeviceScreen(
-        device: r.device,
-        data: weatherdata,
-      );
+      return mainscreen();
     }));
   }
 @override
   void dispose() {
     controller.dispose();
-    controller1.dispose();
+    //controller1.dispose();
     super.dispose();
   }
   @override
@@ -231,17 +262,7 @@ class _FindDevicesScreenState extends State<FindDevicesScreen>
                 ),
               ),
             ),
-            Container(
-              height: 150,
-              width: 150,
-              child: Center(
-                child: Image(
-                  image: AssetImage('images/scan.png'),
-                  height: animation1.value * 100,
-                  width: animation1.value * 100,
-                ),
-              ),
-            ),
+            searchlogo(),
             SingleChildScrollView(
               child: Column(
                 children: <Widget>[
@@ -268,12 +289,14 @@ class _FindDevicesScreenState extends State<FindDevicesScreen>
     );
   }
 }
+// ignore: camel_case_types
 class settingsscreen extends StatefulWidget {
-  const settingsscreen(this.device);
-  final BluetoothDevice device;
+  //const settingsscreen(this.device);
+  //final BluetoothDevice device;
   @override
   _settingsscreenState createState() => _settingsscreenState();
 }
+// ignore: camel_case_types
 class _settingsscreenState extends State<settingsscreen> {
   void searchinsettings() {
     Navigator.pop(context);
@@ -315,6 +338,7 @@ class _settingsscreenState extends State<settingsscreen> {
                   style: TextStyle(color: Colors.white, fontSize: 15),
                 ),
                 IconButton(
+                  //onPressed: ,
                   iconSize: 80,
                   icon: Image(
                     image: AssetImage(
@@ -335,6 +359,7 @@ class _settingsscreenState extends State<settingsscreen> {
   }
 }
 
+// ignore: camel_case_types
 class informationscreen extends StatefulWidget {
   informationscreen({this.device,this.mfg});
   final BluetoothDevice device;
@@ -342,6 +367,7 @@ class informationscreen extends StatefulWidget {
   @override
   _informationscreenState createState() => _informationscreenState();
 }
+// ignore: camel_case_types
 class _informationscreenState extends State<informationscreen> {
   @override
   Widget build(BuildContext context) {
@@ -373,6 +399,10 @@ class _informationscreenState extends State<informationscreen> {
                   'Manufacture Date:${widget.mfg}',
                   style: TextStyle(color: Colors.white, fontSize: 25),
                 ),
+                Text(
+                  'Contact:1-979-285-2400',
+                  style: TextStyle(color: Colors.white, fontSize: 25),
+                ),
               ],
             ),
           ),
@@ -381,85 +411,213 @@ class _informationscreenState extends State<informationscreen> {
     );
   }
 }
-class DeviceScreen extends StatefulWidget {
-  const DeviceScreen({Key key, this.device, this.data}) : super(key: key);
-  final BluetoothDevice device;
-  final data;
+class mainscreen extends StatefulWidget {
   @override
-  _DeviceScreenState createState() => _DeviceScreenState();
+  _mainscreenState createState() => _mainscreenState();
 }
-class _DeviceScreenState extends State<DeviceScreen>
-    with SingleTickerProviderStateMixin {
-  Widget weatherinfo() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: <Widget>[
-        Container(
-          child: Center(
-            child: Text(
-              'WEATHER INFO',
-              style: TextStyle(color: Colors.orange, fontSize: 20),
-            ),
+
+class _mainscreenState extends State<mainscreen> {
+  void settings() {
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+      return settingsscreen();
+    }));
+  }
+  void info() async{
+    await charac.write([69]);
+    ans=await charac.read();
+    //print(ans);
+    mfgdata=String.fromCharCodes(ans);
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+      return informationscreen(mfg: mfgdata);
+    }));
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('images/background.jpg'),
+            fit: BoxFit.cover,
           ),
         ),
-        SizedBox(
-          height: 5,
+        child: SafeArea(
+          child: ListView(
+            children: <Widget>[
+              /*Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: <Widget>[
+                  battery(),
+                ],
+              ),*/
+              Image(
+                //height: 160,
+                //width: 160,
+                image: AssetImage('images/sitelogo.png'),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  IconButton(
+                    iconSize: 60,
+                    icon: Image(
+                      image: AssetImage('images/settings.png'),
+                    ),
+                    onPressed: () => settings(),
+                  ),
+                  IconButton(
+                    iconSize: 50,
+                    icon: Image(
+                      image: AssetImage('images/information.png'),
+                    ),
+                    onPressed: () => info(),
+                  ),
+                ],
+              ),
+              buttons(device: device1,),
+              Center(child: FutureBuilder<dynamic>(
+                future: getlocationweather(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return Column(
+                      //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        Container(
+                          child: Center(
+                            child: Text(
+                              'WEATHER INFO',
+                              style: TextStyle(color: Colors.orange, fontSize: 20),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 8,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: <Widget>[
+                            Text(
+                              'Cityname:        ${snapshot.data['name']} ',
+                              style: TextStyle(fontSize: 15, color: Colors.white),
+                            ),
+                            Text(
+                              'Sunrise:    ${readTimestamp(snapshot.data['sys']['sunrise'])}',
+                              style: TextStyle(fontSize: 15, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                        SizedBox(
+                          height: 12,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: <Widget>[
+                            Text(
+                              'Temperature: ${snapshot.data['main']['temp']} °F',
+                              style: TextStyle(fontSize: 15, color: Colors.white),
+                            ),
+                            Text(
+                              'Sunset:     ${readTimestamp(snapshot.data['sys']['sunset'])}',
+                              style: TextStyle(fontSize: 15, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                        SizedBox(
+                          height: 12,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: <Widget>[
+                            Text(
+                              'Humidity:              ${snapshot.data['main']['humidity']}%',
+                              style: TextStyle(fontSize: 15, color: Colors.white),
+                            ),
+                            Text(
+                              'Wind:    ${snapshot.data['wind']['speed']} mph',
+                              style: TextStyle(fontSize: 15, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  } else if (snapshot.hasError) {
+                    return Text("${snapshot.error}");
+                  }
+                  // By default, show a loading spinner.
+                  return CircularProgressIndicator(
+                    valueColor: new AlwaysStoppedAnimation<Color>(Colors.yellow),
+                  );
+                },
+              ),
+              ),
+            ],
+          ),
         ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: <Widget>[
-            Text(
-              'Cityname:        ${widget.data['name']} ',
-              style: TextStyle(fontSize: 15, color: Colors.white),
-            ),
-            Text(
-              'Sunrise:    ${readTimestamp(widget.data['sys']['sunrise'])}',
-              style: TextStyle(fontSize: 15, color: Colors.white),
-            ),
-          ],
-        ),
-        SizedBox(
-          height: 8,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: <Widget>[
-            Text(
-              'Temperature: ${widget.data['main']['temp']} °F',
-              style: TextStyle(fontSize: 15, color: Colors.white),
-            ),
-            Text(
-              'Sunset:     ${readTimestamp(widget.data['sys']['sunset'])}',
-              style: TextStyle(fontSize: 15, color: Colors.white),
-            ),
-          ],
-        ),
-        SizedBox(
-          height: 8,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: <Widget>[
-            Text(
-              'Humidity:              ${widget.data['main']['humidity']}%',
-              style: TextStyle(fontSize: 15, color: Colors.white),
-            ),
-            Text(
-              'Wind:    ${widget.data['wind']['speed']} mph',
-              style: TextStyle(fontSize: 15, color: Colors.white),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
+}
+class buttons extends StatefulWidget {
+  const buttons({Key key, this.device}) : super(key: key);
+  final BluetoothDevice device;
+  @override
+  _buttonsState createState() => _buttonsState();
+}
+class _buttonsState extends State<buttons>
+    with SingleTickerProviderStateMixin {
+  void getlocdata() async {
+    weatherdata = await getlocationweather();
+  }
+
+  Widget battery() {
+    if(batvalue==null){
+      batvalue=97;
+    }
+    print('batvalue=$batvalue');
+    if (batvalue == 100) {
+      return Container(
+        child: Image(
+          height: 50,
+          width: 50,
+          image: AssetImage('images/icons8-low-battery-50.png'),
+        ),
+      );
+    } else if (batvalue == 99) {
+      return Container(
+        child: Image(
+          height: 50,
+          width: 50,
+          image: AssetImage('images/icons8-battery-level-50.png'),
+        ),
+      );
+    } else if (batvalue == 98) {
+      return Container(
+        child: Image(
+          height: 50,
+          width: 50,
+          image: AssetImage('images/icons8-charged-battery-50.png'),
+        ),
+      );
+    } else if (batvalue == 97) {
+      return Container(
+        child: Image(
+          height: 50,
+          width: 50,
+          image: AssetImage('images/icons8-full-battery-50.png'),
+        ),
+      );
+    }
+  }
+
+
   void driwash() async{
     if (pwrpressAttention == true) {
       await charac.write([65]);
       gross=await charac.read();
       batvalue=gross[0];
       await charac.write([51]);
-      _currentmode=51;
       setState(() {
         stdpressAttention = false;
         bstpressAttention = false;
@@ -474,7 +632,6 @@ class _DeviceScreenState extends State<DeviceScreen>
       gross=await charac.read();
       batvalue=gross[0];
      await charac.write([48]);
-      _currentmode=48;
       setState(() {
         stdpressAttention = true;
         bstpressAttention = false;
@@ -489,7 +646,6 @@ class _DeviceScreenState extends State<DeviceScreen>
       gross=await charac.read();
       batvalue=gross[0];
       await charac.write([49]);
-      _currentmode=49;
       setState(() {
         stdpressAttention = false;
         bstpressAttention = true;
@@ -503,9 +659,7 @@ class _DeviceScreenState extends State<DeviceScreen>
       await charac.write([65]);
       gross=await charac.read();
       batvalue=gross[0];
-
       await charac.write([50]);
-      _currentmode=50;
       setState(() {
         stdpressAttention = false;
         bstpressAttention = false;
@@ -519,8 +673,6 @@ class _DeviceScreenState extends State<DeviceScreen>
     await charac.write([65]);
     gross=await charac.read();
     batvalue=gross[0];
-
-    print('currentmode:$_currentmode');
     if(!powerstatus){
       if(x1<1){
 
@@ -531,30 +683,22 @@ class _DeviceScreenState extends State<DeviceScreen>
         _currentmode=modeno[0];
       }
      await charac.write([66]);}
-    print('current mode after power on is:$_currentmode');
+    //print('current mode after power on is:$_currentmode');
 setState(() {
   pwrpressAttention = !pwrpressAttention;
+  if(_currentmode==48){
+      stdpressAttention=true;
+  }
+  if(_currentmode==49){
+      bstpressAttention=true;
+  }
+  if(_currentmode==50){
+      hyppressAttention=true;
+  }
+  if(_currentmode==51){
+      dripressAttention=true;
+  }
 });
-      if(_currentmode==48){
-        setState(() {
-          stdpressAttention=true;
-        });
-      }
-      if(_currentmode==49){
-        setState(() {
-          bstpressAttention=true;
-        });
-      }
-      if(_currentmode==50){
-        setState(() {
-          hyppressAttention=true;
-        });
-      }
-      if(_currentmode==51){
-        setState(() {
-          dripressAttention=true;
-        });
-      }
   }
   void poweron() async{
     x2=0;
@@ -569,7 +713,6 @@ setState(() {
       hyppressAttention = false;
       dripressAttention = false;
     });
-    print('current mode after power off is:$_currentmode');
     showDialog(
         context: context,
         builder: (context) {
@@ -590,30 +733,7 @@ setState(() {
           );
         });
   }
-  void settings() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-      return settingsscreen(widget.device);
-    }));
-  }
-  void info() async{
-    await charac.write([69]);
-    ans=await charac.read();
-    print(ans);
-    //await charac.write([65]);
-    mfgdata=String.fromCharCodes(ans);
-      Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-        return informationscreen(device: widget.device, mfg: mfgdata);
-      }));
-  }
-  int _currentmode;
-  int batvalue;
-  List<int> gross=[];
-  Timer _timer;
-List<int> modeno=[];
-bool powerstatus=false;
-  List<BluetoothService> services;
-  BluetoothCharacteristic charac;
-  bool pwrpressAttention = false;
+
   void getservices() async {
     services = await widget.device.discoverServices();
     services.forEach((service) {
@@ -624,14 +744,14 @@ bool powerstatus=false;
             charac = characteristic;
             await charac.write([68]);
             pwrstatus=await charac.read();
-            print(pwrstatus);
+            //print(pwrstatus); reading to check if device is already on
             if(pwrstatus[0]==101){
-              print('it entered power on loop');
-              await charac.write([65]);
+              //print('it entered power on loop'); if pwrstatus[0]==101 means device is already on
+              await charac.write([65]);  //reading bat value
               gross=await charac.read();
-              await charac.write([67]);
+              await charac.write([67]); //asking for mode
               modeno=await charac.read();
-              print('modeno:$modeno');
+              //print('modeno:$modeno'); to get mode number when device is already on
               setState(() {
                 pwrpressAttention=true;
                 batvalue=gross[0];
@@ -653,81 +773,9 @@ bool powerstatus=false;
               });
             }
           }
-          if(characteristic.uuid.toString()==CHARACTERISTIC_UUID_TX){
-            await characteristic.setNotifyValue(true);
-            characteristic.value.listen((v) {
-              // do something with new value
-              print(v[0]);
-              if (modecont[0] == 48) {
-                setState(() {
-                  stdpressAttention = true;
-                });
-              }
-              if (modecont[0] == 49) {
-                setState(() {
-                  bstpressAttention = true;
-                });
-              }
-              if (modecont[0] == 50) {
-                setState(() {
-                  hyppressAttention = true;
-                });
-              }
-              if (modecont[0] == 51) {
-                setState(() {
-                  dripressAttention = true;
-                });
-              }
-            });
-
-
-          }
-          /*if(characteristic.uuid.toString() == CHARACTERISTIC_UUID_TX) {
-            await characteristic.setNotifyValue(true);
-            characteristic.value.listen((v)async{
-              if (x2 == 1) {
-                print('written for getting mode');
-                await characteristic.write([67]);
-                modecont = await characteristic.read();
-                print('current mode is:$modecont');
-
-//               if(x2==1){
-//               await characteristic.write([67]);
-//               print('notification characteristic written');}
-                if (modecont[0] == 48) {
-                  setState(() {
-                    stdpressAttention = true;
-                  });
-                }
-                if (modecont[0] == 49) {
-                  setState(() {
-                    bstpressAttention = true;
-                  });
-                }
-                if (modecont[0] == 50) {
-                  setState(() {
-                    hyppressAttention = true;
-                  });
-                }
-                if (modecont[0] == 51) {
-                  setState(() {
-                    dripressAttention = true;
-                  });
-                }
-              }
-
-
-            });
-
-          }*/
-
         });
       }
     });
-  }
-  void getbat()async{
-    await charac.write([65]);
-    //gross=await charac.read();
   }
   Widget getmodemsg(){
     if(stdpressAttention==true){
@@ -741,50 +789,35 @@ bool powerstatus=false;
     }else{
       return Text('Power is off',textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),);
     }
-
   }
-  Widget battery() {
-   if(batvalue==null){
-     batvalue=97;
-   }
-    print('batvalue=$batvalue');
-    if (batvalue == 97) {
-      return Container(
-        child: Image(
-          height: 50,
-          width: 50,
-          image: AssetImage('images/icons8-low-battery-50.png'),
-        ),
-      );
-    } else if (batvalue == 98) {
-      return Container(
-        child: Image(
-          height: 50,
-          width: 50,
-          image: AssetImage('images/icons8-battery-level-50.png'),
-        ),
-      );
-    } else if (batvalue == 99) {
-      return Container(
-        child: Image(
-          height: 50,
-          width: 50,
-          image: AssetImage('images/icons8-charged-battery-50.png'),
-        ),
-      );
-    } else if (batvalue == 100) {
-      return Container(
-        child: Image(
-          height: 50,
-          width: 50,
-          image: AssetImage('images/icons8-full-battery-50.png'),
-        ),
-      );
-    }
+  @override
+  void initState() {
+    super.initState();
+    x2=0;
+    pwrpressAttention=false;
+    stdpressAttention=false;
+    bstpressAttention=false;
+    hyppressAttention=false;
+    dripressAttention=false;
+    x1 = 0;
+    getservices();
   }
-  Widget _buildServiceTiles() {
+@override
+  void dispose() {
+    super.dispose();
+    print('BEFORE DISCONNECT');
+    widget.device.disconnect();
+    print('AFTER DISCONNECT');
+    _timer.cancel();
+  }
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
+        Row(mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+          battery(),
+        ],),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
@@ -797,12 +830,12 @@ bool powerstatus=false;
                 image: AssetImage('images/power_off.png'),
               ),
               onPressed: pwrpressAttention ? () => poweron() : () => power(),
-              iconSize: 120,
+              iconSize: 100,
             ),
           ],
         ),
         SizedBox(
-          height: 30,
+          height: 10,
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -843,7 +876,7 @@ bool powerstatus=false;
           ],
         ),
         SizedBox(
-          height: 20,
+          height: 10,
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -884,87 +917,12 @@ bool powerstatus=false;
           ],
         ),
         SizedBox(
-          height: 20,
+          height: 10,
         ),
-        weatherinfo(),
-      ],
-    );
-  }
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    print('init current mode:$_currentmode');
-    //_currentmode=0;
-    x2=0;
-    stdpressAttention=false;
-    bstpressAttention=false;
-    hyppressAttention=false;
-    dripressAttention=false;
-    x1 = 0;
-    getservices();
-  }
-@override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
-    print('BEFORE DISCONNECT');
-    widget.device.disconnect();
-    print('AFTER DISCONNECT');
-    _timer.cancel();
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('images/background.jpg'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: <Widget>[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: <Widget>[
-                  battery(),
-                ],
-              ),
-              Image(
-                height: 160,
-                width: 160,
-                image: AssetImage('images/sitelogo.png'),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  IconButton(
-                    iconSize: 60,
-                    icon: Image(
-                      image: AssetImage('images/settings.png'),
-                    ),
-                    onPressed: () => settings(),
-                  ),
-                  IconButton(
-                    iconSize: 50,
-                    icon: Image(
-                      image: AssetImage('images/information.png'),
-                    ),
-                    onPressed: () => info(),
-                  ),
-                ],
-              ),
-              _buildServiceTiles(),
-              SizedBox(
-                height: 25,
-              ),
-              getmodemsg(),
-            ],
-          ),
-        ),
-      ),
+        getmodemsg(),
+
+        ],
     );
   }
 }
+
