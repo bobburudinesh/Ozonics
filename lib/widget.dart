@@ -14,7 +14,7 @@ class ScanResultTile extends StatelessWidget {
         children: <Widget>[
           Text(
             result.device.name,
-            style: TextStyle(color: Colors.black),
+            style: TextStyle(color: Colors.white),
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
           ),
