@@ -21,7 +21,9 @@ class ScanResultTile extends StatelessWidget {
         ],
       );
     } else {
-      return Text(result.device.id.toString());
+      return Text(result.device.id.toString(),style: TextStyle(color: Colors.white),
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,);
     }
   }
 

@@ -18,12 +18,17 @@ Future getlocationweather() async {
   var weatherdata =  networkhelper.getData();
   return weatherdata;
 }
+
+
+
+StreamSubscription<List<int>> streamSubscription;
 BluetoothDevice device1;
 bool stdpressAttention = false;
 bool bstpressAttention = false;
 bool hyppressAttention = false;
 bool dripressAttention = false;
 List<int> ans=[];
+int notifiedvalue=0;
 int prev=0;
 List<int> pwrstatus=[];
 List<int> modecont=[];
@@ -221,6 +226,7 @@ class _FindDevicesScreenState extends State<FindDevicesScreen>
   }
 
   void connection(var r) async {
+
     await r.device.connect();
     device1=r.device;
     FlutterBlue.instance.stopScan();
@@ -237,53 +243,52 @@ class _FindDevicesScreenState extends State<FindDevicesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      /*appBar: AppBar(
         title: Text(
           'Ozonics',
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.black45,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('images/background.jpg'),
-            fit: BoxFit.cover,
+      ),*/
+      body: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('images/background.jpg'),
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        child: Column(
-          children: <Widget>[
-            Container(
-              child: Center(
-                child: Image(
-                  image: AssetImage('images/sitelogo.png'),
-                  height: animation.value * 200,
-                  width: animation.value * 200,
+          child: Column(
+            children: <Widget>[
+              Container(
+                child: Center(
+                  child: Image(
+                    image: AssetImage('images/sitelogo.png'),
+                    //height: animation.value * 200,
+                    //width: animation.value * 200,
+                  ),
                 ),
               ),
-            ),
-            searchlogo(),
-            SingleChildScrollView(
-              child: Column(
-                children: <Widget>[
-                  StreamBuilder<List<ScanResult>>(
-                    stream: FlutterBlue.instance.scanResults,
-                    initialData: [],
-                    builder: (c, snapshot) => Column(
-                      children: snapshot.data
-                          .map(
-                            (r) => ScanResultTile(
-                          result: r,
-                          onTap: () => connection(r),
-                        ),
-                      )
-                          .toList(),
-                    ),
+              Text('Scan For Devices',style: TextStyle(fontSize: 15,color: Colors.white),textAlign: TextAlign.center,),
+              searchlogo(),
+              SingleChildScrollView(
+                child: StreamBuilder<List<ScanResult>>(
+                  stream: FlutterBlue.instance.scanResults,
+                  initialData: [],
+                  builder: (c, snapshot) => Column(
+                    children: snapshot.data
+                        .map(
+                          (r) => ScanResultTile(
+                        result: r,
+                        onTap: () => connection(r),
+                      ),
+                    )
+                        .toList(),
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -559,6 +564,7 @@ class _mainscreenState extends State<mainscreen> {
     );
   }
 }
+// ignore: camel_case_types
 class buttons extends StatefulWidget {
   const buttons({Key key, this.device}) : super(key: key);
   final BluetoothDevice device;
@@ -569,6 +575,133 @@ class _buttonsState extends State<buttons>
     with SingleTickerProviderStateMixin {
   void getlocdata() async {
     weatherdata = await getlocationweather();
+  }
+  _setNotificationdouble() async {
+    if (charac != null) {
+      //await device1.setNotifyValue(characteristic, true);
+      await charac.setNotifyValue(!charac.isNotifying);
+     // print(!charac.isNotifying);
+      // ignore: cancel_subscriptions
+
+       //streamSubscription =
+           charac.value.listen((gross1) {
+         print('inside listen');
+         print('                '+'$gross1[0]'+'                 ');
+         if(gross1[0]==80){
+           notifiedvalue=80;
+           setState(() {
+             pwrpressAttention=true;
+             stdpressAttention = true;
+             bstpressAttention = false;
+             hyppressAttention = false;
+             dripressAttention = false;
+           });
+
+
+           print('Device turned on');
+         }
+         else if(gross1[0]==81){
+           notifiedvalue=81;
+           setState(() {
+             pwrpressAttention=false;
+             stdpressAttention = false;
+             bstpressAttention = false;
+             hyppressAttention = false;
+             dripressAttention = false;
+           });
+
+
+
+           print('Device turned off');
+         }
+         else if(gross1[0]==97){
+           batvalue=97;
+
+
+           print('battery info a');
+           print('Battery B/W 75-100%');
+         }
+         else if(gross1[0]==98){
+           batvalue=98;
+
+           print('battery info b');
+           print('Battery B/W 50-75%');
+         }
+         else if(gross1[0]==99){
+           batvalue=99;
+
+           print('battery info c');
+           print('Battery B/W 25-50%');
+         }
+         else if(gross1[0]==100){
+           batvalue=100;
+
+           print('battery info d');
+           print('Battery B/W 0-25%');
+         }
+         else if(gross1[0]==48){
+           notifiedvalue=48;
+           setState(() {
+             stdpressAttention = true;
+             bstpressAttention = false;
+             hyppressAttention = false;
+             dripressAttention = false;
+           });
+
+
+           print('STANDARD MODE');
+         }
+         else if(gross1[0]==49){
+           notifiedvalue=49;
+           setState(() {
+             stdpressAttention = false;
+             bstpressAttention = true;
+             hyppressAttention = false;
+             dripressAttention = false;
+           });
+
+           print('BOOST MODE');
+         }
+         else if(gross1[0]==50){
+           notifiedvalue=50;
+           setState(() {
+             stdpressAttention = false;
+             bstpressAttention = false;
+             hyppressAttention = true;
+             dripressAttention = false;
+           });
+           print('HYPERBOOST MODE');
+
+         }
+         else if(gross1[0]==51){
+           notifiedvalue=51;
+           setState(() {
+             stdpressAttention = false;
+             bstpressAttention = false;
+             hyppressAttention = false;
+             dripressAttention = true;
+           });
+
+           print('DRIWASH MODE');
+         }
+         else if(gross1[0]==102){
+           notifiedvalue=102;
+
+
+           print('device off');
+         }
+         else if(gross1[0]==101){
+           notifiedvalue=101;
+           setState(() {
+             pwrpressAttention=true;
+           });
+
+           print('device on');
+         }
+
+        //_onValuesChanged(charac);
+      });
+    }
   }
 
   Widget battery() {
@@ -613,67 +746,78 @@ class _buttonsState extends State<buttons>
 
 
   void driwash() async{
+
     if (pwrpressAttention == true) {
+     // await charac.setNotifyValue(false);
       await charac.write([65]);
-      gross=await charac.read();
-      batvalue=gross[0];
+      //gross=await charac.read();
+     // batvalue=gross[0];
       await charac.write([51]);
-      setState(() {
+      /*setState(() {
         stdpressAttention = false;
         bstpressAttention = false;
         hyppressAttention = false;
         dripressAttention = true;
-      });
+      });*/
     }
   }
   void standard()  async{
     if (pwrpressAttention == true) {
+     // await charac.setNotifyValue(false);
       await charac.write([65]);
-      gross=await charac.read();
-      batvalue=gross[0];
+     // gross=await charac.read();
+     // batvalue=gross[0];
      await charac.write([48]);
-      setState(() {
+      /*setState(() {
         stdpressAttention = true;
         bstpressAttention = false;
         hyppressAttention = false;
         dripressAttention = false;
-      });
+      });*/
     }
   }
   void boost() async{
+
     if (pwrpressAttention == true) {
+      //await charac.setNotifyValue(false);
       await charac.write([65]);
-      gross=await charac.read();
-      batvalue=gross[0];
+      //gross=await charac.read();
+     // batvalue=gross[0];
       await charac.write([49]);
-      setState(() {
+      /*setState(() {
         stdpressAttention = false;
         bstpressAttention = true;
         hyppressAttention = false;
         dripressAttention = false;
-      });
+      });*/
     }
+
   }
   void hyperboost() async{
+
     if (pwrpressAttention == true) {
+    //  await charac.setNotifyValue(true);
       await charac.write([65]);
-      gross=await charac.read();
-      batvalue=gross[0];
+     // gross=await charac.read();
+      //batvalue=gross[0];
       await charac.write([50]);
-      setState(() {
+      /*setState(() {
         stdpressAttention = false;
         bstpressAttention = false;
         hyppressAttention = true;
         dripressAttention = false;
-      });
+      });*/
     }
   }
-  void power() async{
+  void poweron() async{
+
     x2=1;
+    //await charac.setNotifyValue(false);
     await charac.write([65]);
-    gross=await charac.read();
-    batvalue=gross[0];
-    if(!powerstatus){
+    await charac.write([66]);
+    //gross=await charac.read();
+    //batvalue=gross[0];
+    /*if(!powerstatus){
       if(x1<1){
 
         await charac.write([67]);
@@ -682,7 +826,7 @@ class _buttonsState extends State<buttons>
         x1++;
         _currentmode=modeno[0];
       }
-     await charac.write([66]);}
+    }
     //print('current mode after power on is:$_currentmode');
 setState(() {
   pwrpressAttention = !pwrpressAttention;
@@ -698,21 +842,23 @@ setState(() {
   if(_currentmode==51){
       dripressAttention=true;
   }
-});
+});*/
   }
-  void poweron() async{
+  void poweroff() async{
     x2=0;
+    //await charac.setNotifyValue(false);
     await charac.write([65]);
-    gross=await charac.read();
-    batvalue=gross[0];
+   // gross=await charac.read();
+    //batvalue=gross[0];
     await charac.write([66]);
-    setState(() {
+    /*setState(() {
       pwrpressAttention = !pwrpressAttention;
       stdpressAttention = false;
       bstpressAttention = false;
       hyppressAttention = false;
       dripressAttention = false;
-    });
+    });*/
+   // await charac.setNotifyValue(true);
     showDialog(
         context: context,
         builder: (context) {
@@ -739,20 +885,21 @@ setState(() {
     services.forEach((service) {
       if (service.uuid.toString() == SERVICE_UUID) {
         service.characteristics.forEach((characteristic) async{
+
           if (characteristic.uuid.toString() == CHARACTERISTIC_UUID_TX) {
             print('$characteristic.serviceUuid');
             charac = characteristic;
             await charac.write([68]);
-            pwrstatus=await charac.read();
+
             //print(pwrstatus); reading to check if device is already on
-            if(pwrstatus[0]==101){
+            if(notifiedvalue==101){
               //print('it entered power on loop'); if pwrstatus[0]==101 means device is already on
               await charac.write([65]);  //reading bat value
-              gross=await charac.read();
+              //gross=await charac.read();
               await charac.write([67]); //asking for mode
-              modeno=await charac.read();
+              //modeno=await charac.read();
               //print('modeno:$modeno'); to get mode number when device is already on
-              setState(() {
+              /*setState(() {
                 pwrpressAttention=true;
                 batvalue=gross[0];
                 _currentmode=modeno[0];
@@ -770,10 +917,12 @@ setState(() {
                 }
                 powerstatus=true;
                 x2=1;
-              });
+              });*/
             }
+            _setNotificationdouble();
           }
         });
+       // _setNotificationdouble();
       }
     });
   }
@@ -829,7 +978,7 @@ setState(() {
                   : Image(
                 image: AssetImage('images/power_off.png'),
               ),
-              onPressed: pwrpressAttention ? () => poweron() : () => power(),
+              onPressed: pwrpressAttention ? () => poweroff() : () => poweron(),
               iconSize: 100,
             ),
           ],
