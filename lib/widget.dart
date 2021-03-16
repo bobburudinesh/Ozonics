@@ -10,19 +10,15 @@ class ScanResultTile extends StatelessWidget {
 
   Widget _buildTitle(BuildContext context) {
     if (result.device.name.length > 0) {
-      return Column(
-        children: <Widget>[
-          Text(
-            result.device.name,
-            style: TextStyle(color: Colors.white),
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-        ],
+      return Text(
+        result.device.name,
+        style: TextStyle(color: Colors.white),
+        //overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
       );
     } else {
       return Text(result.device.id.toString(),style: TextStyle(color: Colors.white),
-        overflow: TextOverflow.ellipsis,
+        //overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,);
     }
   }

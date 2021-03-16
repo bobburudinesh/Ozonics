@@ -19,10 +19,60 @@ Future getlocationweather() async {
   return weatherdata;
 }
 
+Widget battery() {
+  if(batvalue==null){
+    batvalue=97;
+  }
+  print('batvalue=$batvalue');
+  if (batvalue == 100) {
+    return Container(
+      child: Image(
+        height: 50,
+        width: 50,
+        image: AssetImage('images/icons8-low-battery-50.png'),
+      ),
+    );
+  } else if (batvalue == 99) {
+    return Container(
+      child: Image(
+        height: 50,
+        width: 50,
+        image: AssetImage('images/icons8-battery-level-50.png'),
+      ),
+    );
+  } else if (batvalue == 98) {
+    return Container(
+      child: Image(
+        height: 50,
+        width: 50,
+        image: AssetImage('images/icons8-charged-battery-50.png'),
+      ),
+    );
+  } else if (batvalue == 97) {
+    return Container(
+      child: Image(
+        height: 50,
+        width: 50,
+        image: AssetImage('images/icons8-full-battery-50.png'),
+      ),
+    );
+  }
+}
+var defaultminutes = "15 Minutes";
 
-
+List<String> minutes = <String>[
+  '10 Minutes',
+  '15 Minutes',
+  '20 Minutes',
+  '25 Minutes',
+  '30 Minutes',
+  'Do Not Off'
+];
+String selectedtime='15 Minutes';
 StreamSubscription<List<int>> streamSubscription;
 BluetoothDevice device1;
+List<ScanResult> dta;
+int modevalue=0;
 bool stdpressAttention = false;
 bool bstpressAttention = false;
 bool hyppressAttention = false;
@@ -38,6 +88,7 @@ int x1 = 0;
 int x2=0;
 Future<dynamic> weatherdata;
 int _currentmode;
+//List<String> weatherinfo;
 int batvalue;
 List<int> gross=[];
 Timer _timer;
@@ -79,6 +130,52 @@ void main() {
   runApp(FlutterBlueApp());
 }
 
+class ScanResultTile extends StatelessWidget {
+  const ScanResultTile({Key key, this.result, this.onTap}) : super(key: key);
+
+  final ScanResult result;
+  final VoidCallback onTap;
+
+  Widget _buildTitle(BuildContext context) {
+    if (result.device.name.length > 0) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        decoration: BoxDecoration(
+            border: Border.all(color: Colors.white)
+        ),
+
+        child: Text(
+          result.device.name,
+          style: TextStyle(color: Colors.white),
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+    else {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+
+        decoration: BoxDecoration(
+            border: Border.all(color: Colors.white)
+        ),
+        child: Text(result.device.id.toString(),style: TextStyle(color: Colors.white),
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: _buildTitle(context),
+      onTap: onTap,
+    );
+  }
+}
+
+
 class FlutterBlueApp extends StatefulWidget {
   @override
   _FlutterBlueAppState createState() => _FlutterBlueAppState();
@@ -95,7 +192,7 @@ class _FlutterBlueAppState extends State<FlutterBlueApp> {
           builder: (c, snapshot) {
             final state = snapshot.data;
             if (state == BluetoothState.on) {
-              return FindDevicesScreen();
+              return Scanscreen();
             }
             return BluetoothOffScreen(state: state);
           }),
@@ -184,7 +281,7 @@ class _searchlogoState extends State<searchlogo> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 150,
+      height: 120,
       width: 150,
       child: Center(
         child: Image(
@@ -196,6 +293,161 @@ class _searchlogoState extends State<searchlogo> with SingleTickerProviderStateM
     );
   }
 }
+class winfo extends StatefulWidget {
+  @override
+  _winfoState createState() => _winfoState();
+}
+
+class _winfoState extends State<winfo> {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 160,
+      child: Column(
+        children: [
+          Row(
+              children: <Widget>[
+                Expanded(
+                    child: Divider(thickness: 5,color: Colors.yellowAccent,)
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 7),
+                  child: Text(
+                    'WEATHER INFO',
+                    style: TextStyle(color: Colors.orange, fontSize: 20),
+
+                  ),
+                ),
+                Expanded(
+                    child: Divider(thickness: 5,color: Colors.yellowAccent,)
+                ),
+              ]
+          ),
+
+          FutureBuilder<dynamic>(
+            future: getlocationweather(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return Column(
+                  //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: <Widget>[
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 9),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Text(
+                                  'Cityname: ${snapshot.data['name']} ',
+                                  style: TextStyle(fontSize: 15, color: Colors.white),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Text(
+                                  'Temperature: ${snapshot.data['main']['temp']} °F',
+                                  style: TextStyle(fontSize: 15, color: Colors.white),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Text(
+                                  'Humidity: ${snapshot.data['main']['humidity']}%',
+                                  style: TextStyle(fontSize: 15, color: Colors.white),
+                                ),
+                              ),
+
+                            ],),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 9),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Text(
+                                  'Sunrise: ${readTimestamp(snapshot.data['sys']['sunrise'])}',
+                                  style: TextStyle(fontSize: 15, color: Colors.white),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Text(
+                                  'Sunset: ${readTimestamp(snapshot.data['sys']['sunset'])}',
+                                  style: TextStyle(fontSize: 15, color: Colors.white),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Text(
+                                  'Wind: ${snapshot.data['wind']['speed']} Mph',
+                                  style: TextStyle(fontSize: 15, color: Colors.white),
+                                ),
+                              ),
+
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              } else if (snapshot.hasError) {
+                return Text("${snapshot.error}");
+              }
+              // By default, show a loading spinner.
+              return CircularProgressIndicator(
+                valueColor: new AlwaysStoppedAnimation<Color>(Colors.yellow),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+ class Scanscreen extends StatefulWidget {
+   @override
+   _ScanscreenState createState() => _ScanscreenState();
+ }
+
+ class _ScanscreenState extends State<Scanscreen> {
+   @override
+   Widget build(BuildContext context) {
+     return Scaffold(
+       body: Container(
+         decoration: BoxDecoration(
+           image: DecorationImage(
+             image: AssetImage('images/background.jpg'),
+             fit: BoxFit.cover,
+           ),
+         ),
+         child: Column(
+           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+           children: [
+             FindDevicesScreen(),
+             winfo()
+           ],
+         ),
+
+
+       )
+
+
+
+
+
+
+
+     );
+   }
+ }
 
 
 
@@ -242,56 +494,168 @@ class _FindDevicesScreenState extends State<FindDevicesScreen>
   }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      /*appBar: AppBar(
-        title: Text(
-          'Ozonics',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.black45,
-      ),*/
-      body: SafeArea(
-        child: Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('images/background.jpg'),
-              fit: BoxFit.cover,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 10,
             ),
-          ),
-          child: Column(
-            children: <Widget>[
-              Container(
-                child: Center(
-                  child: Image(
-                    image: AssetImage('images/sitelogo.png'),
-                    //height: animation.value * 200,
-                    //width: animation.value * 200,
-                  ),
-                ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 65),
+              child: Image(
+
+                image: AssetImage('images/sitelogo.png'),
+                //height: 100,
+                //width: 100,
               ),
-              Text('Scan For Devices',style: TextStyle(fontSize: 15,color: Colors.white),textAlign: TextAlign.center,),
-              searchlogo(),
-              SingleChildScrollView(
-                child: StreamBuilder<List<ScanResult>>(
-                  stream: FlutterBlue.instance.scanResults,
-                  initialData: [],
-                  builder: (c, snapshot) => Column(
-                    children: snapshot.data
-                        .map(
-                          (r) => ScanResultTile(
-                        result: r,
-                        onTap: () => connection(r),
-                      ),
-                    )
-                        .toList(),
+            ),
+            SizedBox(
+              height: 5,
+            ),
+            Text('Scan For Devices',style: TextStyle(fontSize: 15,color: Colors.white),textAlign: TextAlign.center,),
+            searchlogo(),
+            Container(
+
+              //color: Colors.red,
+              height: 250,
+              //width: 300,
+              child: ListView(
+                children: [
+                  StreamBuilder<List<ScanResult>>(
+                    stream: FlutterBlue.instance.scanResults,
+                    initialData: [],
+                    builder: (c, snapshot) => Column(
+                      children: snapshot.data
+                          .map(
+                            (r) => ScanResultTile(
+                          result: r,
+                          onTap: () => connection(r),
+                        ),
+                      )
+                          .toList(),
+                    ),
                   ),
-                ),
+
+
+
+                ],
               ),
-            ],
+
+            ),
+          ],
+        ),
+        // winfo(),
+
+        /*Container(
+              height: 125,
+              child: Column(
+                children: [
+                  Row(
+                      children: <Widget>[
+                        Expanded(
+                            child: Divider(thickness: 5,color: Colors.yellowAccent,)
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 7),
+                          child: Text(
+                            'WEATHER INFO',
+                            style: TextStyle(color: Colors.orange, fontSize: 20),
+
+                          ),
+                        ),
+                        Expanded(
+                            child: Divider(thickness: 5,color: Colors.yellowAccent,)
+                        ),
+                      ]
+                  ),
+
+              FutureBuilder<dynamic>(
+                future: getlocationweather(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return Column(
+                      //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 9),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                            Text(
+                              'Cityname: ${snapshot.data['name']} ',
+                              style: TextStyle(fontSize: 15, color: Colors.white),
+                            ),
+                            Text(
+                              'Temperature: ${snapshot.data['main']['temp']} °F',
+                              style: TextStyle(fontSize: 15, color: Colors.white),
+                            ),
+                            Text(
+                              'Humidity: ${snapshot.data['main']['humidity']}%',
+                              style: TextStyle(fontSize: 15, color: Colors.white),
+                            ),
+
+                          ],),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 9),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Sunrise: ${readTimestamp(snapshot.data['sys']['sunrise'])}',
+                                style: TextStyle(fontSize: 15, color: Colors.white),
+                              ),
+                              Text(
+                                'Sunset: ${readTimestamp(snapshot.data['sys']['sunset'])}',
+                                style: TextStyle(fontSize: 15, color: Colors.white),
+                              ),
+                              Text(
+                                'Wind: ${snapshot.data['wind']['speed']} Mph',
+                                style: TextStyle(fontSize: 15, color: Colors.white),
+                              ),
+
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                      ],
+                    );
+                  } else if (snapshot.hasError) {
+                    return Text("${snapshot.error}");
+                  }
+                  // By default, show a loading spinner.
+                  return CircularProgressIndicator(
+                    valueColor: new AlwaysStoppedAnimation<Color>(Colors.yellow),
+                  );
+                },
+              ),
+                ],
+              ),
+            ),*/
+      ],
+    );
+
+
+
+      /*Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('images/background.jpg'),
+            fit: BoxFit.cover,
           ),
         ),
+        child: put column here
       ),
-    );
+    );*/
   }
 }
 // ignore: camel_case_types
@@ -303,10 +667,419 @@ class settingsscreen extends StatefulWidget {
 }
 // ignore: camel_case_types
 class _settingsscreenState extends State<settingsscreen> {
+
   void searchinsettings() {
     Navigator.pop(context);
     Navigator.pop(context);
   }
+void writetime (int x1)async{
+    await charac.write([x1]);
+    Navigator.of(context).pop(true);
+    print('Time set to:$x1');
+}
+  void remotepage(){
+
+
+
+showDialog(
+
+    context: context,
+  builder: (context){
+      return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.all(10),
+          child: Stack(
+            overflow: Overflow.visible,
+            alignment: Alignment.center,
+            children: <Widget>[
+              Container(
+                width: double.infinity,
+                height: 300,
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15),
+                    color: Colors.black
+                ),
+                padding: EdgeInsets.fromLTRB(20, 50, 20, 20),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        'Select Time',
+                        style: TextStyle(color: Colors.white,fontSize: 20),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        RaisedButton(
+                            child: Center(
+                              child: new Text(
+                                '10 Minutes',
+                                style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            textColor: Colors.white,
+                            shape: new RoundedRectangleBorder(
+                                borderRadius: new BorderRadius.circular(25),
+                                side: BorderSide(color: Colors.yellow, width: 2)),
+                            color:   Colors.transparent,
+                            // color:  b1? Colors.yellow : Colors.transparent,
+                            onPressed: () {
+                              /*setState(() {
+                            b1=true;
+                            b2=false;
+                            b3=false;
+                            b4=false;
+                            b5=false;
+                          });*/
+                              writetime(83);
+
+
+                            }
+
+                        ),
+                        RaisedButton(
+
+                            child: Center(
+                              child: new Text(
+                                '15 Minutes',
+                                style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            textColor: Colors.white,
+                            shape: new RoundedRectangleBorder(
+                                borderRadius: new BorderRadius.circular(25),
+                                side: BorderSide(color: Colors.yellow, width: 2)),
+                            color: Colors.transparent,
+                            onPressed: () {
+
+                              writetime(84);
+
+
+                            }
+
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        RaisedButton(
+
+                            child: Center(
+                              child: new Text(
+                                '20 Minutes',
+                                style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            textColor: Colors.white,
+                            shape: new RoundedRectangleBorder(
+                                borderRadius: new BorderRadius.circular(25),
+                                side: BorderSide(color: Colors.yellow, width: 2)),
+                            color:  Colors.transparent,
+                            onPressed: () {
+
+                              writetime(85);
+
+
+                            }
+
+                        ),
+                        RaisedButton(
+
+                            child: Center(
+                              child: new Text(
+                                '30 Minutes',
+                                style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            textColor: Colors.white,
+                            shape: new RoundedRectangleBorder(
+                                borderRadius: new BorderRadius.circular(25),
+                                side: BorderSide(color: Colors.yellow, width: 2)),
+                            color:  Colors.transparent,
+                            onPressed: () {
+
+                              writetime(86);
+
+
+                            }
+
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        RaisedButton(
+
+                            child: Center(
+                              child: new Text(
+                                'Do Not Turn OFF',
+                                style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            textColor: Colors.white,
+                            shape: new RoundedRectangleBorder(
+                                borderRadius: new BorderRadius.circular(25),
+                                side: BorderSide(color: Colors.yellow, width: 2)),
+                            color:   Colors.transparent,
+                            onPressed: () {
+                              writetime(87);
+
+
+                            }
+
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        RaisedButton(
+
+                            child: Center(
+                              child: new Text(
+                                'BACK',
+                                style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            textColor: Colors.black87,
+                            shape: new RoundedRectangleBorder(
+                                borderRadius: new BorderRadius.circular(25),
+                                side: BorderSide(color: Colors.yellow, width: 2)),
+                            color:  Colors.yellow ,
+                            onPressed: () {
+                              Navigator.of(context).pop(true);
+
+
+                            }
+
+                        ),
+                      ],
+                    ),
+
+
+
+
+                  ],
+                ),
+              ),
+              /*Positioned(
+                  top: -100,
+                  child: Image.network("https://i.imgur.com/2yaf2wb.png", width: 150, height: 150)
+              )*/
+            ],
+          )
+      );
+  }
+
+
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /*  showDialog(
+        context: context,
+        builder: (context) {
+
+          return AlertDialog(
+            backgroundColor: Colors.black,
+
+            content: Container(
+              height: 400,
+              decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+          color: Colors.blue),
+              //height: 300,
+              //width: 300,
+              //color: Colors.black,
+              child: Column(
+                children: [
+                  Text(
+                    'Select Time',
+                    style: TextStyle(color: Colors.white,fontSize: 16),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      RaisedButton(
+                        child: Center(
+                          child: new Text(
+                            '10 Minutes',
+                            style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        textColor: Colors.white,
+                        shape: new RoundedRectangleBorder(
+                            borderRadius: new BorderRadius.circular(25),
+                            side: BorderSide(color: Colors.yellow, width: 2)),
+                        color:   Colors.transparent,
+                         // color:  b1? Colors.yellow : Colors.transparent,
+                          onPressed: () {
+                          /*setState(() {
+                            b1=true;
+                            b2=false;
+                            b3=false;
+                            b4=false;
+                            b5=false;
+                          });*/
+                          writetime(83);
+
+
+                        }
+
+                      ),
+                      RaisedButton(
+
+                          child: Center(
+                            child: new Text(
+                              '15 Minutes',
+                              style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          textColor: Colors.white,
+                          shape: new RoundedRectangleBorder(
+                              borderRadius: new BorderRadius.circular(25),
+                              side: BorderSide(color: Colors.yellow, width: 2)),
+                          color: Colors.transparent,
+                          onPressed: () {
+
+                            writetime(84);
+
+
+                          }
+
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      RaisedButton(
+
+                          child: Center(
+                            child: new Text(
+                              '20 Minutes',
+                              style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          textColor: Colors.white,
+                          shape: new RoundedRectangleBorder(
+                              borderRadius: new BorderRadius.circular(25),
+                              side: BorderSide(color: Colors.yellow, width: 2)),
+                          color:  Colors.transparent,
+                          onPressed: () {
+
+                            writetime(85);
+
+
+                          }
+
+                      ),
+                      RaisedButton(
+
+                          child: Center(
+                            child: new Text(
+                              '30 Minutes',
+                              style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          textColor: Colors.white,
+                          shape: new RoundedRectangleBorder(
+                              borderRadius: new BorderRadius.circular(25),
+                              side: BorderSide(color: Colors.yellow, width: 2)),
+                          color:  Colors.transparent,
+                          onPressed: () {
+
+                            writetime(86);
+
+
+                          }
+
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      RaisedButton(
+
+                          child: Center(
+                            child: new Text(
+                              'Do Not Turn OFF',
+                              style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          textColor: Colors.white,
+                          shape: new RoundedRectangleBorder(
+                              borderRadius: new BorderRadius.circular(25),
+                              side: BorderSide(color: Colors.yellow, width: 2)),
+                          color:   Colors.transparent,
+                          onPressed: () {
+                            writetime(87);
+
+
+                          }
+
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      RaisedButton(
+
+                          child: Center(
+                            child: new Text(
+                              'BACK',
+                              style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          textColor: Colors.black87,
+                          shape: new RoundedRectangleBorder(
+                              borderRadius: new BorderRadius.circular(25),
+                              side: BorderSide(color: Colors.yellow, width: 2)),
+                          color:  Colors.yellow ,
+                          onPressed: () {
+                            Navigator.of(context).pop(true);
+
+
+                          }
+
+                      ),
+                    ],
+                  ),
+
+
+
+
+                ],
+              ),
+
+            ),
+          );
+        }
+    );*/
+  }
+  
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -343,6 +1116,8 @@ class _settingsscreenState extends State<settingsscreen> {
                   style: TextStyle(color: Colors.white, fontSize: 15),
                 ),
                 IconButton(
+
+
                   //onPressed: ,
                   iconSize: 80,
                   icon: Image(
@@ -355,6 +1130,58 @@ class _settingsscreenState extends State<settingsscreen> {
                   'check for updates',
                   style: TextStyle(color: Colors.white, fontSize: 15),
                 ),
+                /*Container(
+                  width: 150.0,
+                  child: RaisedButton(
+                    child: Text("SELECT TIME"),
+                    onPressed: () => showMaterialScrollPicker(
+                      context: context,
+                      title: "Pick Time",
+                      items: minutes,
+                      selectedItem: defaultminutes,
+                      onChanged: (value) {
+                        selectedtime=value;
+
+                      },
+                    )
+                  ),
+                ),
+                Text(
+                  'Selected Time:$selectedtime',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white
+                  ),
+                ),*/
+                /*SizedBox(
+                  height: 20,
+                ),
+                SizedBox(
+                  height: 65,
+                  width: 120,
+
+                  child: RaisedButton(
+
+                      child: Center(
+                        child: new Text(
+                          'REMOTE',
+                          style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      textColor: Colors.black87,
+                      shape: new RoundedRectangleBorder(
+                          borderRadius: new BorderRadius.circular(25),
+                          side: BorderSide(color: Colors.yellow, width: 2)),
+                      color: Colors.yellow ,
+                      onPressed: () {
+                        remotepage();
+
+                      }
+
+                  ),
+                ),*/
+
+
               ],
             ),
           ),
@@ -422,20 +1249,7 @@ class mainscreen extends StatefulWidget {
 }
 
 class _mainscreenState extends State<mainscreen> {
-  void settings() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-      return settingsscreen();
-    }));
-  }
-  void info() async{
-    await charac.write([69]);
-    ans=await charac.read();
-    //print(ans);
-    mfgdata=String.fromCharCodes(ans);
-    Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-      return informationscreen(mfg: mfgdata);
-    }));
-  }
+
 
 
   @override
@@ -449,114 +1263,157 @@ class _mainscreenState extends State<mainscreen> {
           ),
         ),
         child: SafeArea(
-          child: ListView(
-            children: <Widget>[
-              /*Row(
-                mainAxisAlignment: MainAxisAlignment.start,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
                 children: <Widget>[
-                  battery(),
-                ],
-              ),*/
-              Image(
-                //height: 160,
-                //width: 160,
-                image: AssetImage('images/sitelogo.png'),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  IconButton(
-                    iconSize: 60,
-                    icon: Image(
-                      image: AssetImage('images/settings.png'),
-                    ),
-                    onPressed: () => settings(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(height: 3,color: Colors.yellow,),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    iconSize: 50,
-                    icon: Image(
-                      image: AssetImage('images/information.png'),
-                    ),
-                    onPressed: () => info(),
+                  /*Expanded(
+                    child: Container(height: 3,color: Colors.yellow,),
+                  ),*/
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      battery(),
+                      Text(device1.name+'\n'+'Unit Name',style: TextStyle(color: Colors.white,height: 2),textAlign: TextAlign.right,),
+                    ],
                   ),
-                ],
-              ),
-              buttons(device: device1,),
-              Center(child: FutureBuilder<dynamic>(
-                future: getlocationweather(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    return Column(
-                      //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: <Widget>[
-                        Container(
-                          child: Center(
-                            child: Text(
-                              'WEATHER INFO',
-                              style: TextStyle(color: Colors.orange, fontSize: 20),
-                            ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(height: 3,color: Colors.yellow,),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Container(
+                          height: 40,
+                          //width: 100,
+                          child: Image(
+                            //height: 110,
+                            //width: 160,
+                            image: AssetImage('images/sitelogo.png'),
                           ),
                         ),
-                        SizedBox(
-                          height: 8,
+                      ),
+                      Expanded(
+                        child: Container(height: 3,color: Colors.yellow,),
+                      ),
+                    ],
+                  ),
+                 /* Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      IconButton(
+                        iconSize: 50,
+                        icon: Image(
+                          image: AssetImage('images/settings.png'),
                         ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        onPressed: () => settings(),
+                      ),
+                      IconButton(
+                        iconSize: 35,
+                        icon: Image(
+                          image: AssetImage('images/information.png'),
+                        ),
+                        onPressed: () => info(),
+                      ),
+                    ],
+                  ),*/
+                  buttons(device: device1,),
+                  /*Row(
+                      children: <Widget>[
+                        Expanded(
+                            child: Divider(thickness: 5,color: Colors.yellowAccent,)
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 7),
+                          child: Text(
+                            'WEATHER INFO',
+                            style: TextStyle(color: Colors.orange, fontSize: 20),
+
+                          ),
+                        ),
+                        Expanded(
+                            child: Divider(thickness: 5,color: Colors.yellowAccent,)
+                        ),
+                      ]
+                  ),
+                 Center(child: FutureBuilder<dynamic>(
+                    future: getlocationweather(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return Column(
+                          //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: <Widget>[
-                            Text(
-                              'Cityname:        ${snapshot.data['name']} ',
-                              style: TextStyle(fontSize: 15, color: Colors.white),
-                            ),
-                            Text(
-                              'Sunrise:    ${readTimestamp(snapshot.data['sys']['sunrise'])}',
-                              style: TextStyle(fontSize: 15, color: Colors.white),
+                            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 9),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Cityname: ${snapshot.data['name']} ',
+                                        style: TextStyle(fontSize: 15, color: Colors.white),
+                                      ),
+                                      Text(
+                                        'Temperature: ${snapshot.data['main']['temp']} °F',
+                                        style: TextStyle(fontSize: 15, color: Colors.white),
+                                      ),
+                                      Text(
+                                        'Humidity: ${snapshot.data['main']['humidity']}%',
+                                        style: TextStyle(fontSize: 15, color: Colors.white),
+                                      ),
+
+                                    ],),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 9),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Text(
+                                        'Sunrise: ${readTimestamp(snapshot.data['sys']['sunrise'])}',
+                                        style: TextStyle(fontSize: 15, color: Colors.white),
+                                      ),
+                                      Text(
+                                        'Sunset: ${readTimestamp(snapshot.data['sys']['sunset'])}',
+                                        style: TextStyle(fontSize: 15, color: Colors.white),
+                                      ),
+                                      Text(
+                                        'Wind: ${snapshot.data['wind']['speed']} Mph',
+                                        style: TextStyle(fontSize: 15, color: Colors.white),
+                                      ),
+
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                        SizedBox(
-                          height: 12,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: <Widget>[
-                            Text(
-                              'Temperature: ${snapshot.data['main']['temp']} °F',
-                              style: TextStyle(fontSize: 15, color: Colors.white),
-                            ),
-                            Text(
-                              'Sunset:     ${readTimestamp(snapshot.data['sys']['sunset'])}',
-                              style: TextStyle(fontSize: 15, color: Colors.white),
-                            ),
-                          ],
-                        ),
-                        SizedBox(
-                          height: 12,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: <Widget>[
-                            Text(
-                              'Humidity:              ${snapshot.data['main']['humidity']}%',
-                              style: TextStyle(fontSize: 15, color: Colors.white),
-                            ),
-                            Text(
-                              'Wind:    ${snapshot.data['wind']['speed']} mph',
-                              style: TextStyle(fontSize: 15, color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ],
-                    );
-                  } else if (snapshot.hasError) {
-                    return Text("${snapshot.error}");
-                  }
-                  // By default, show a loading spinner.
-                  return CircularProgressIndicator(
-                    valueColor: new AlwaysStoppedAnimation<Color>(Colors.yellow),
-                  );
-                },
+                        );
+                      } else if (snapshot.hasError) {
+                        return Text("${snapshot.error}");
+                      }
+                      // By default, show a loading spinner.
+                      return CircularProgressIndicator(
+                        valueColor: new AlwaysStoppedAnimation<Color>(Colors.yellow),
+                      );
+                    },
+                  ),
+                  ),*/
+                ],
               ),
-              ),
+              winfo(),
             ],
           ),
         ),
@@ -578,12 +1435,8 @@ class _buttonsState extends State<buttons>
   }
   _setNotificationdouble() async {
     if (charac != null) {
-      //await device1.setNotifyValue(characteristic, true);
-      await charac.setNotifyValue(!charac.isNotifying);
-     // print(!charac.isNotifying);
-      // ignore: cancel_subscriptions
 
-       //streamSubscription =
+
            charac.value.listen((gross1) {
          print('inside listen');
          print('                '+'$gross1[0]'+'                 ');
@@ -609,6 +1462,26 @@ class _buttonsState extends State<buttons>
              hyppressAttention = false;
              dripressAttention = false;
            });
+           showDialog(
+               context: context,
+               builder: (context) {
+                 Future.delayed(const Duration(seconds: 15), () {
+                   Navigator.of(context).pop(true);
+                 });
+                 return AlertDialog(
+                   title: Text('Please Remove Battery From The Unit'),
+                   content: Countdown(
+                     duration: Duration(seconds: 15),
+                     builder: (BuildContext ctx, Duration remaining) {
+                       return Text(
+                         '${remaining.inSeconds}',
+                         textAlign: TextAlign.center,
+                       );
+                     },
+                   ),
+                 );
+               }
+               );
 
 
 
@@ -688,10 +1561,13 @@ class _buttonsState extends State<buttons>
            notifiedvalue=102;
 
 
+
            print('device off');
          }
          else if(gross1[0]==101){
            notifiedvalue=101;
+           //modevalue=101;
+           //charac.write([67]);
            setState(() {
              pwrpressAttention=true;
            });
@@ -704,180 +1580,48 @@ class _buttonsState extends State<buttons>
     }
   }
 
-  Widget battery() {
-    if(batvalue==null){
-      batvalue=97;
-    }
-    print('batvalue=$batvalue');
-    if (batvalue == 100) {
-      return Container(
-        child: Image(
-          height: 50,
-          width: 50,
-          image: AssetImage('images/icons8-low-battery-50.png'),
-        ),
-      );
-    } else if (batvalue == 99) {
-      return Container(
-        child: Image(
-          height: 50,
-          width: 50,
-          image: AssetImage('images/icons8-battery-level-50.png'),
-        ),
-      );
-    } else if (batvalue == 98) {
-      return Container(
-        child: Image(
-          height: 50,
-          width: 50,
-          image: AssetImage('images/icons8-charged-battery-50.png'),
-        ),
-      );
-    } else if (batvalue == 97) {
-      return Container(
-        child: Image(
-          height: 50,
-          width: 50,
-          image: AssetImage('images/icons8-full-battery-50.png'),
-        ),
-      );
-    }
-  }
 
 
   void driwash() async{
 
     if (pwrpressAttention == true) {
      // await charac.setNotifyValue(false);
-      await charac.write([65]);
+     // await charac.write([65]);
       //gross=await charac.read();
      // batvalue=gross[0];
       await charac.write([51]);
-      /*setState(() {
-        stdpressAttention = false;
-        bstpressAttention = false;
-        hyppressAttention = false;
-        dripressAttention = true;
-      });*/
+
     }
   }
   void standard()  async{
     if (pwrpressAttention == true) {
-     // await charac.setNotifyValue(false);
-      await charac.write([65]);
-     // gross=await charac.read();
-     // batvalue=gross[0];
      await charac.write([48]);
-      /*setState(() {
-        stdpressAttention = true;
-        bstpressAttention = false;
-        hyppressAttention = false;
-        dripressAttention = false;
-      });*/
+
     }
   }
   void boost() async{
 
     if (pwrpressAttention == true) {
-      //await charac.setNotifyValue(false);
-      await charac.write([65]);
-      //gross=await charac.read();
-     // batvalue=gross[0];
       await charac.write([49]);
-      /*setState(() {
-        stdpressAttention = false;
-        bstpressAttention = true;
-        hyppressAttention = false;
-        dripressAttention = false;
-      });*/
     }
 
   }
   void hyperboost() async{
 
     if (pwrpressAttention == true) {
-    //  await charac.setNotifyValue(true);
-      await charac.write([65]);
-     // gross=await charac.read();
-      //batvalue=gross[0];
+
       await charac.write([50]);
-      /*setState(() {
-        stdpressAttention = false;
-        bstpressAttention = false;
-        hyppressAttention = true;
-        dripressAttention = false;
-      });*/
     }
   }
   void poweron() async{
 
-    x2=1;
-    //await charac.setNotifyValue(false);
-    await charac.write([65]);
     await charac.write([66]);
-    //gross=await charac.read();
-    //batvalue=gross[0];
-    /*if(!powerstatus){
-      if(x1<1){
-
-        await charac.write([67]);
-        modeno=await charac.read();
-        print('modeno:$modeno');
-        x1++;
-        _currentmode=modeno[0];
-      }
-    }
-    //print('current mode after power on is:$_currentmode');
-setState(() {
-  pwrpressAttention = !pwrpressAttention;
-  if(_currentmode==48){
-      stdpressAttention=true;
-  }
-  if(_currentmode==49){
-      bstpressAttention=true;
-  }
-  if(_currentmode==50){
-      hyppressAttention=true;
-  }
-  if(_currentmode==51){
-      dripressAttention=true;
-  }
-});*/
   }
   void poweroff() async{
     x2=0;
-    //await charac.setNotifyValue(false);
-    await charac.write([65]);
-   // gross=await charac.read();
-    //batvalue=gross[0];
+
     await charac.write([66]);
-    /*setState(() {
-      pwrpressAttention = !pwrpressAttention;
-      stdpressAttention = false;
-      bstpressAttention = false;
-      hyppressAttention = false;
-      dripressAttention = false;
-    });*/
-   // await charac.setNotifyValue(true);
-    showDialog(
-        context: context,
-        builder: (context) {
-          Future.delayed(const Duration(seconds: 15), () {
-                    Navigator.of(context).pop(true);
-                  });
-          return AlertDialog(
-            title: Text('Please Remove Battery From The Unit'),
-            content: Countdown(
-              duration: Duration(seconds: 15),
-              builder: (BuildContext ctx, Duration remaining) {
-                return Text(
-                  '${remaining.inSeconds}',
-                  textAlign: TextAlign.center,
-                );
-              },
-            ),
-          );
-        });
+
   }
 
   void getservices() async {
@@ -889,40 +1633,31 @@ setState(() {
           if (characteristic.uuid.toString() == CHARACTERISTIC_UUID_TX) {
             print('$characteristic.serviceUuid');
             charac = characteristic;
-            await charac.write([68]);
+            await charac.setNotifyValue(!charac.isNotifying);
 
-            //print(pwrstatus); reading to check if device is already on
-            if(notifiedvalue==101){
-              //print('it entered power on loop'); if pwrstatus[0]==101 means device is already on
-              await charac.write([65]);  //reading bat value
-              //gross=await charac.read();
-              await charac.write([67]); //asking for mode
-              //modeno=await charac.read();
-              //print('modeno:$modeno'); to get mode number when device is already on
-              /*setState(() {
-                pwrpressAttention=true;
-                batvalue=gross[0];
-                _currentmode=modeno[0];
-                if(_currentmode==48){
-                    stdpressAttention=true;
-                }
-                if(_currentmode==49){
-                    bstpressAttention=true;
-                }
-                if(_currentmode==50){
-                    hyppressAttention=true;
-                }
-                if(_currentmode==51){
-                    dripressAttention=true;
-                }
-                powerstatus=true;
-                x2=1;
-              });*/
+            Timer.periodic(Duration(seconds: 10), (timer) async{
+              await charac.write([65]);
+              //print(DateTime.now());
+            });
+
+
+
+            await charac.write([68]);
+            print('Current value:$notifiedvalue');
+            List<int> n1=await charac.read();
+            print('read value=$n1');
+            if(notifiedvalue==101 || n1[0]==101){
+              print('asked for current mode');
+
+
+              await charac.write([67]);
+              print('Current mode:$notifiedvalue');//asking for mode
             }
             _setNotificationdouble();
+
           }
+
         });
-       // _setNotificationdouble();
       }
     });
   }
@@ -938,6 +1673,20 @@ setState(() {
     }else{
       return Text('Power is off',textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),);
     }
+  }
+  void settings() {
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+      return settingsscreen();
+    }));
+  }
+  void info() async{
+    await charac.write([69]);
+    ans=await charac.read();
+    //print(ans);
+    mfgdata=String.fromCharCodes(ans);
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+      return informationscreen(mfg: mfgdata);
+    }));
   }
   @override
   void initState() {
@@ -962,14 +1711,20 @@ setState(() {
   @override
   Widget build(BuildContext context) {
     return Column(
+      //mainAxisAlignment: MainAxisAlignment.start,
       children: <Widget>[
-        Row(mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-          battery(),
-        ],),
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            IconButton(
+              color: Colors.blue,
+              iconSize: 50,
+              icon: Image(
+                image: AssetImage('images/settings.png'),
+              ),
+              onPressed: () => settings(),
+            ),
             IconButton(
               icon: pwrpressAttention
                   ? Image(
@@ -981,93 +1736,147 @@ setState(() {
               onPressed: pwrpressAttention ? () => poweroff() : () => poweron(),
               iconSize: 100,
             ),
-          ],
-        ),
-        SizedBox(
-          height: 10,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            RaisedButton(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 20, bottom: 20),
-                child: new Text(
-                  ' Standard  ',
-                  style: TextStyle(fontSize: 20),
-                ),
+            IconButton(
+              iconSize: 35,
+              icon: Image(
+                image: AssetImage('images/information.png'),
               ),
-              textColor: Colors.white,
-              shape: new RoundedRectangleBorder(
-                  borderRadius: new BorderRadius.circular(10),
-                  side: BorderSide(color: Colors.yellow, width: 2)),
-              color: stdpressAttention ? Colors.yellow : Colors.grey,
-              onPressed: () => standard(),
-            ),
-            SizedBox(
-              width: 30,
-            ),
-            RaisedButton(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 20, bottom: 20),
-                child: new Text(
-                  '  Boost   ',
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
-              textColor: Colors.white,
-              shape: new RoundedRectangleBorder(
-                  borderRadius: new BorderRadius.circular(10),
-                  side: BorderSide(color: Colors.yellow, width: 2)),
-              color: bstpressAttention ? Colors.yellow : Colors.grey,
-              onPressed: () => boost(),
+              onPressed: () => info(),
             ),
           ],
         ),
-        SizedBox(
+        /*SizedBox(
           height: 10,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            RaisedButton(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 20, bottom: 20),
-                child: new Text(
-                  'HyperBoost',
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
-              textColor: Colors.white,
-              shape: new RoundedRectangleBorder(
-                  borderRadius: new BorderRadius.circular(10),
-                  side: BorderSide(color: Colors.yellow, width: 2)),
-              color: hyppressAttention ? Colors.pinkAccent : Colors.grey,
-              onPressed: () => hyperboost(),
-            ),
-            SizedBox(
-              width: 30,
-            ),
-            RaisedButton(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 20, bottom: 20),
-                child: new Text(
-                  ' Driwash  ',
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
-              textColor: Colors.white,
-              shape: new RoundedRectangleBorder(
-                  borderRadius: new BorderRadius.circular(10),
-                  side: BorderSide(color: Colors.yellow, width: 2)),
-              color: dripressAttention ? Colors.yellow : Colors.grey,
-              onPressed: () => driwash(),
-            ),
-          ],
-        ),
+        ),*/
         SizedBox(
-          height: 10,
+          height:200,
+          width: 330,
+          child: Row(
+            children: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  SizedBox(
+                    height: 65,
+                    width: 120,
+                    child: RaisedButton(
+
+                      child: Center(
+                        child: new Text(
+                          'Standard',
+                          style: TextStyle(fontSize: 16.5,fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      textColor: Colors.white,
+                      shape: new RoundedRectangleBorder(
+                          borderRadius: new BorderRadius.circular(25),
+                          side: BorderSide(color: Colors.yellow, width: 2)),
+                      color: stdpressAttention ? Colors.yellow : Colors.transparent,
+                      onPressed: () => standard(),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 70,
+                    width: 120,
+                  ),
+                  SizedBox(
+                    height: 65,
+                    width: 120,
+                    child: RaisedButton(
+
+                      child: Center(
+                        child: new Text(
+                          'Hyperboost',
+                          style: TextStyle(fontSize: 16.5,fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      textColor: Colors.white,
+                      shape: new RoundedRectangleBorder(
+                          borderRadius: new BorderRadius.circular(25),
+                          side: BorderSide(color: Colors.yellow, width: 2)),
+                      color: hyppressAttention ? Colors.yellow : Colors.transparent,
+                      onPressed: () => hyperboost(),
+                    ),
+                  ),
+
+
+                ],),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    height: 30,
+                  ),
+                  Container(color: Colors.yellow, height: 3, width: 90,),
+                  Container(color: Colors.yellow, height: 55, width: 3,),
+                  Container(
+                    height: 30,
+                    width: 70,
+                    // margin: EdgeInsets.only(top: 40, left: 40, right: 40),
+                    decoration: new BoxDecoration(
+                      color: Colors.transparent,
+                      border: Border.all(color: Colors.yellow, width: 0.0),
+                      borderRadius: new BorderRadius.all(Radius.elliptical(70, 30)),
+                    ),
+                    child: Center(child: Text('Mode',style:TextStyle(color: Colors.yellow,fontWeight: FontWeight.bold),)),
+                  ),
+                  Container(color: Colors.yellow, height: 55, width: 3,),
+                  Container(color: Colors.yellow, height: 3, width: 90,),
+
+                ],),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  SizedBox(
+                    height: 65,
+                    width: 120,
+                    child: RaisedButton(
+
+                      child: Center(
+                        child: new Text(
+                          'Boost',
+                          style: TextStyle(fontSize: 16.5,fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      textColor: Colors.white,
+                      shape: new RoundedRectangleBorder(
+                          borderRadius: new BorderRadius.circular(25),
+                          side: BorderSide(color: Colors.yellow, width: 2)),
+                      color: bstpressAttention ? Colors.yellow : Colors.transparent,
+                      onPressed: () => boost(),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 70,
+                    width: 120,
+                  ),
+                  SizedBox(
+                    height: 65,
+                    width: 120,
+                    child: RaisedButton(
+
+                      child: Center(
+                        child: new Text(
+                          'Driwash',
+                          style: TextStyle(fontSize: 16.5,fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      textColor: Colors.white,
+                      shape: new RoundedRectangleBorder(
+                          borderRadius: new BorderRadius.circular(25),
+                          side: BorderSide(color: Colors.yellow, width: 2)),
+                      color: dripressAttention ? Colors.yellow : Colors.transparent,
+                      onPressed: () => driwash(),
+                    ),
+                  ),
+
+                ],),
+            ],
+          ),
         ),
+        // SizedBox(
+        //   height: 10,
+        // ),
         getmodemsg(),
 
         ],
